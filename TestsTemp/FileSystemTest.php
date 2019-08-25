@@ -1,59 +1,49 @@
 <?php
 
 /**
- * Opulence
+ * Aphiria
  *
- * @link      https://www.opulencephp.com
+ * @link      https://www.aphiria.com
  * @copyright Copyright (C) 2019 David Young
- * @license   https://github.com/opulencephp/Opulence/blob/master/LICENSE.md
+ * @license   https://github.com/aphiria/io/blob/master/LICENSE.md
  */
 
 declare(strict_types=1);
 
-namespace Opulence\IO\Tests;
+namespace Aphiria\IO\Tests;
 
 use DateTime;
-use Opulence\IO\FileSystem;
-use Opulence\IO\FileSystemException;
+use Aphiria\IO\FileSystem;
+use Aphiria\IO\FileSystemException;
+use PHPUnit\Framework\TestCase;
 
 /**
  * Tests the file system
  */
-class FileSystemTest extends \PHPUnit\Framework\TestCase
+class FileSystemTest extends TestCase
 {
-    /** @var FileSystem The file system to use in tests */
-    private $fileSystem;
+    private FileSystem $fileSystem;
 
-    /**
-     * Sets up the tests
-     */
     protected function setUp(): void
     {
         $this->fileSystem = new FileSystem();
     }
 
-    /**
-     * Does some housekeeping before ending the tests
-     */
     protected function tearDown(): void
     {
-        @unlink(__DIR__ . '/test.txt');
+        if (\file_exists(__DIR__ . '/test.txt')) {
+            @unlink(__DIR__ . '/test.txt');
+        }
     }
 
-    /**
-     * Tests appending to a file
-     */
-    public function testAppending(): void
+    public function testAppendingAddsToFile(): void
     {
         file_put_contents(__DIR__ . '/test.txt', 'foo');
         $this->fileSystem->append(__DIR__ . '/test.txt', ' bar');
         $this->assertEquals('foo bar', $this->fileSystem->read(__DIR__ . '/test.txt'));
     }
 
-    /**
-     * Tests copying directories
-     */
-    public function testCopyingDirectories(): void
+    public function testCopyingDirectoriesProperlyCopiesThem(): void
     {
         $this->fileSystem->copyDirectory(__DIR__ . '/files/subdirectory', __DIR__ . '/tmp');
         $this->assertTrue($this->fileSystem->exists(__DIR__ . '/tmp/foo.txt'));
@@ -64,18 +54,12 @@ class FileSystemTest extends \PHPUnit\Framework\TestCase
         @rmdir(__DIR__ . '/tmp');
     }
 
-    /**
-     * Tests copying a directory that is not a directory
-     */
-    public function testCopyingDirectoryThatIsNotADirectory(): void
+    public function testCopyingDirectoryThatIsNotADirectoryReturnsFalse(): void
     {
         $this->assertFalse($this->fileSystem->copyDirectory(__DIR__ . '/doesnotexist', __DIR__ . '/tmp'));
     }
 
-    /**
-     * Tests copying a file
-     */
-    public function testCopyingFile(): void
+    public function testCopyingFileCopiesTheContents(): void
     {
         file_put_contents(__DIR__ . '/test.txt', 'foo');
         $this->assertTrue($this->fileSystem->copyFile(__DIR__ . '/test.txt', __DIR__ . '/test2.txt'));
@@ -83,36 +67,30 @@ class FileSystemTest extends \PHPUnit\Framework\TestCase
         @unlink(__DIR__ . '/test2.txt');
     }
 
-    /**
-     * Tests deleting a directory
-     */
-    public function testDeletingDirectory(): void
+    public function testDeletingDirectoryActuallyDeletesIt(): void
     {
         @mkdir(__DIR__ . '/tmp');
         @mkdir(__DIR__ . '/tmp/subdirectory');
         file_put_contents(__DIR__ . '/tmp/subdirectory/foo.txt', 'bar');
         $this->fileSystem->deleteDirectory(__DIR__ . '/tmp');
         $this->assertFalse($this->fileSystem->exists(__DIR__ . '/tmp'));
+
         // Just in case, remove the structure
-        @unlink(__DIR__ . '/tmp/subdirectory/foo.txt');
-        @rmdir(__DIR__ . '/tmp/subdirectory');
-        @rmdir(__DIR__ . '/tmp');
+        foreach (['/tmp/subdirectory/foo.txt', '/tmp/subdirectory', '/tmp'] as $relativePath) {
+            if (\file_exists(__DIR__ . $relativePath)) {
+                @\unlink(__DIR__ . $relativePath);
+            }
+        }
     }
 
-    /**
-     * Tests deleting a file
-     */
-    public function testDeletingFile(): void
+    public function testDeletingFileActuallyDeletesIt(): void
     {
         file_put_contents(__DIR__ . '/test.txt', 'foo');
         $this->assertTrue($this->fileSystem->deleteFile(__DIR__ . '/test.txt'));
         $this->assertFalse($this->fileSystem->exists(__DIR__ . '/test.txt'));
     }
 
-    /**
-     * Tests if a file/directory exists
-     */
-    public function testExists(): void
+    public function testExistsReturnsWhetherOrNotFilesAndDirectoryActuallyExist(): void
     {
         $this->assertTrue($this->fileSystem->exists(__DIR__));
         $this->assertFalse($this->fileSystem->exists(__DIR__ . '/doesnotexist'));
@@ -120,20 +98,18 @@ class FileSystemTest extends \PHPUnit\Framework\TestCase
         $this->assertFalse($this->fileSystem->exists(__DIR__ . '/doesnotexist.txt'));
     }
 
-    /**
-     * Tests getting the basename
-     */
-    public function testGettingBasename(): void
+    public function testGettingBasenameForInvalidFileThrowsException(): void
     {
-        $this->assertEquals('foo.txt', $this->fileSystem->getBasename(__DIR__ . '/files/subdirectory/foo.txt'));
         $this->expectException(FileSystemException::class);
         $this->fileSystem->getBasename(__DIR__ . '/doesnotexist.txt');
     }
 
-    /**
-     * Tests getting the directories with recursion
-     */
-    public function testGettingDirectoriesWithRecursion(): void
+    public function testGettingBasenameForValidFileReturnsBasename(): void
+    {
+        $this->assertEquals('foo.txt', $this->fileSystem->getBasename(__DIR__ . '/files/subdirectory/foo.txt'));
+    }
+
+    public function testGettingDirectoriesWithRecursionFindsAllDirectories(): void
     {
         $this->assertEquals([
             __DIR__ . DIRECTORY_SEPARATOR . 'files' . DIRECTORY_SEPARATOR . 'subdirectory',
@@ -141,10 +117,7 @@ class FileSystemTest extends \PHPUnit\Framework\TestCase
         ], $this->fileSystem->getDirectories(__DIR__ . DIRECTORY_SEPARATOR . 'files', true));
     }
 
-    /**
-     * Tests getting the directories without recursion
-     */
-    public function testGettingDirectoriesWithoutRecursion(): void
+    public function testGettingDirectoriesWithoutRecursionAtTopLevel(): void
     {
         $this->assertEquals(
             [__DIR__ . DIRECTORY_SEPARATOR . 'files' . DIRECTORY_SEPARATOR . 'subdirectory'],
@@ -152,72 +125,67 @@ class FileSystemTest extends \PHPUnit\Framework\TestCase
         );
     }
 
-    /**
-     * Tests getting the directory name
-     */
-    public function testGettingDirectoryName(): void
+    public function testGettingDirectoryNameForInvalidDirectoryThrowsException(): void
+    {
+        $this->expectException(FileSystemException::class);
+        $this->fileSystem->getDirectoryName(__DIR__ . '/doesnotexist.txt');
+    }
+
+    public function testGettingDirectoryNameForValidDirectoryReturnsName(): void
     {
         $this->assertEquals(
             __DIR__ . '/files/subdirectory',
             $this->fileSystem->getDirectoryName(__DIR__ . '/files/subdirectory/foo.txt')
         );
-        $this->expectException(FileSystemException::class);
-        $this->fileSystem->getDirectoryName(__DIR__ . '/doesnotexist.txt');
     }
 
-    /**
-     * Tests getting the extension
-     */
-    public function testGettingExtension(): void
+    public function testGettingExtensionForInvalidFileThrowsException(): void
     {
-        $this->assertEquals('txt', $this->fileSystem->getExtension(__DIR__ . '/files/subdirectory/foo.txt'));
         $this->expectException(FileSystemException::class);
         $this->fileSystem->getExtension(__DIR__ . '/doesnotexist.txt');
     }
 
-    /**
-     * Tests getting the file name
-     */
-    public function testGettingFileName(): void
+    public function testGettingExtensionForValidFileReturnsCorrectExtension(): void
     {
-        $this->assertEquals('foo', $this->fileSystem->getFileName(__DIR__ . '/files/subdirectory/foo.txt'));
+        $this->assertEquals('txt', $this->fileSystem->getExtension(__DIR__ . '/files/subdirectory/foo.txt'));
+    }
+
+    public function testGettingFileNameForInvalidFileThrowsException(): void
+    {
         $this->expectException(FileSystemException::class);
         $this->fileSystem->getFileName(__DIR__ . '/doesnotexist.txt');
     }
 
-    /**
-     * Tests getting the file size
-     */
-    public function testGettingFileSize(): void
+    public function testGettingFileNameForValidFileReturnsFileName(): void
     {
-        $path = __DIR__ . '/files/subdirectory/foo.txt';
-        $this->assertEquals(filesize($path), $this->fileSystem->getFileSize($path));
+        $this->assertEquals('foo', $this->fileSystem->getFileName(__DIR__ . '/files/subdirectory/foo.txt'));
+    }
+
+    public function testGettingFileSizeForInvalidFileThrowsException(): void
+    {
         $this->expectException(FileSystemException::class);
         $this->fileSystem->getFileSize(__DIR__ . '/doesnotexist.txt');
     }
 
-    /**
-     * Tests getting files with glob
-     */
-    public function testGettingFilesWithGlob(): void
+    public function testGettingFileSizeForValidFileReturnsFileSize(): void
+    {
+        $path = __DIR__ . '/files/subdirectory/foo.txt';
+        $this->assertEquals(filesize($path), $this->fileSystem->getFileSize($path));
+    }
+
+    public function testGettingFilesWithGlobFindsFilesThatMatchPattern(): void
     {
         $this->assertCount(0, array_diff([
                 __DIR__ . '/files/subdirectory/foo.txt'
             ], $this->fileSystem->glob(__DIR__ . '/files/subdirectory/*.txt')));
     }
 
-    /**
-     * Tests getting the files with an invalid path
-     */
-    public function testGettingFilesWithInvalidPath(): void
+    public function testGettingFilesWithInvalidPathReturnsEmptyArray(): void
     {
         $this->assertEquals([], $this->fileSystem->getFiles(__FILE__));
     }
 
-    /**
-     * Tests getting the files with recursion
-     */
-    public function testGettingFilesWithRecursion(): void
+    public function testGettingFilesWithRecursionFindsAllNestedFiles(): void
     {
         $this->assertCount(0, array_diff([
                 __DIR__ . DIRECTORY_SEPARATOR . 'files' . DIRECTORY_SEPARATOR . 'subdirectory' . DIRECTORY_SEPARATOR . 'subdirectory' . DIRECTORY_SEPARATOR . 'bar.txt',
@@ -226,32 +194,27 @@ class FileSystemTest extends \PHPUnit\Framework\TestCase
             ], $this->fileSystem->getFiles(__DIR__, true)));
     }
 
-    /**
-     * Tests getting the files without recursion
-     */
-    public function testGettingFilesWithoutRecursion(): void
+    public function testGettingFilesWithoutRecursionFindsFilesAtTopLevel(): void
     {
         $this->assertEquals([__FILE__], $this->fileSystem->getFiles(__DIR__));
     }
 
-    /**
-     * Tests getting the last modified time
-     */
-    public function testGettingLastModifiedTime(): void
+    public function testGettingLastModifiedTimeForInvalidFileThrowsException(): void
+    {
+        $this->expectException(FileSystemException::class);
+        $this->fileSystem->getLastModified(__DIR__ . '/doesnotexist.txt');
+    }
+
+    public function testGettingLastModifiedTimeForValidFileReturnsLastModifiedTime(): void
     {
         $path = __DIR__ . '/files/subdirectory/foo.txt';
         $this->assertEquals(
             DateTime::createFromFormat('U', (string)filemtime($path)),
             $this->fileSystem->getLastModified($path)
         );
-        $this->expectException(FileSystemException::class);
-        $this->fileSystem->getLastModified(__DIR__ . '/doesnotexist.txt');
     }
 
-    /**
-     * Tests checking if an invalid directory is not a directory
-     */
-    public function testInvalidDirectoryIsDirectory(): void
+    public function testIsDirectoryOnInvalidDirectoryReturnsFalse(): void
     {
         file_put_contents(__DIR__ . '/test.txt', 'foo');
         $this->assertFalse($this->fileSystem->isDirectory(__DIR__ . '/test.txt'));
@@ -260,45 +223,33 @@ class FileSystemTest extends \PHPUnit\Framework\TestCase
     /**
      * Tests checking if an invalid file is not a file
      */
-    public function testInvalidFileIsFile(): void
+    public function testIsFileOnInvalidFileReturnsFalse(): void
     {
         $this->assertFalse($this->fileSystem->isFile(__DIR__));
     }
 
-    /**
-     * Tests if a file is readable
-     */
-    public function testIsReadable(): void
+    public function testIsReadableReturnsWhetherOrNotFileIsReadable(): void
     {
         $this->assertFalse($this->fileSystem->isReadable(__DIR__ . '/doesnotexist.txt'));
         file_put_contents(__DIR__ . '/test.txt', 'foo');
         $this->assertTrue($this->fileSystem->isReadable(__DIR__ . '/test.txt'));
     }
 
-    /**
-     * Tests if a file is writable
-     */
-    public function testIsWritable(): void
+    public function testIsWritableReturnsWhetherOrNotFileIsWritable(): void
     {
         $this->assertFalse($this->fileSystem->isWritable(__DIR__ . '/doesnotexist.txt'));
         file_put_contents(__DIR__ . '/test.txt', 'foo');
         $this->assertTrue($this->fileSystem->isWritable(__DIR__ . '/test.txt'));
     }
 
-    /**
-     * Tests making a directory
-     */
-    public function testMakingDirectory(): void
+    public function testMakingDirectoryActuallyCreatesADirectory(): void
     {
         $this->assertTrue($this->fileSystem->makeDirectory(__DIR__ . '/tmp'));
         $this->assertTrue($this->fileSystem->exists(__DIR__ . '/tmp'));
         rmdir(__DIR__ . '/tmp');
     }
 
-    /**
-     * Tests moving a file
-     */
-    public function testMovingFile(): void
+    public function testMovingFileActuallyMovesTheFile(): void
     {
         file_put_contents(__DIR__ . '/test.txt', 'foo bar');
         $this->assertTrue($this->fileSystem->move(__DIR__ . '/test.txt', __DIR__ . '/test2.txt'));
@@ -308,45 +259,30 @@ class FileSystemTest extends \PHPUnit\Framework\TestCase
         @unlink(__DIR__ . '/test2.txt');
     }
 
-    /**
-     * Tests reading a file that doesn't exist
-     */
-    public function testReadingFileThatDoesNotExist(): void
+    public function testReadingFileThatDoesNotExistThrowsException(): void
     {
         $this->expectException(FileSystemException::class);
         $this->assertEquals('foo', $this->fileSystem->read(__DIR__ . '/doesnotexist.txt'));
     }
 
-    /**
-     * Tests reading a file that exists
-     */
-    public function testReadingFileThatExists(): void
+    public function testReadingFileThatExistsReturnsItsContents(): void
     {
         file_put_contents(__DIR__ . '/test.txt', 'foo');
         $this->assertEquals('foo', $this->fileSystem->read(__DIR__ . '/test.txt'));
     }
 
-    /**
-     * Tests checking if a valid directory is a directory
-     */
-    public function testValidDirectoryIsDirectory(): void
+    public function testValidDirectoryIsDirectoryReturnsTrue(): void
     {
         $this->assertTrue($this->fileSystem->isDirectory(__DIR__));
     }
 
-    /**
-     * Tests checking if a valid file is a file
-     */
-    public function testValidFileIsFile(): void
+    public function testValidFileIsFileReturnsTrue(): void
     {
         file_put_contents(__DIR__ . '/test.txt', 'foo');
         $this->assertTrue($this->fileSystem->isFile(__DIR__ . '/test.txt'));
     }
 
-    /**
-     * Tests writing to a file
-     */
-    public function testWritingToFile(): void
+    public function testWritingToFileReturnsNumberOfBytesWrittenAndWritesContents(): void
     {
         $this->assertTrue(is_numeric($this->fileSystem->write(__DIR__ . '/test.txt', 'foo bar')));
         $this->assertEquals('foo bar', $this->fileSystem->read(__DIR__ . '/test.txt'));

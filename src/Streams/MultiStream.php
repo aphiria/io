@@ -1,16 +1,16 @@
 <?php
 
 /**
- * Opulence
+ * Aphiria
  *
- * @link      https://www.opulencephp.com
+ * @link      https://www.aphiria.com
  * @copyright Copyright (C) 2019 David Young
- * @license   https://github.com/opulencephp/Opulence/blob/master/LICENSE.md
+ * @license   https://github.com/aphiria/io/blob/master/LICENSE.md
  */
 
 declare(strict_types=1);
 
-namespace Opulence\IO\Streams;
+namespace Aphiria\IO\Streams;
 
 use InvalidArgumentException;
 use RuntimeException;
@@ -18,19 +18,19 @@ use RuntimeException;
 /**
  * Defines a stream that contains multiple sub-streams
  */
-class MultiStream implements IStream
+final class MultiStream implements IStream
 {
     /** @var IStream[] The list of sub-streams */
-    private $streams = [];
+    private array $streams = [];
     /** @var bool Whether or not this stream is seekable */
-    private $isSeekable = true;
+    private bool $isSeekable = true;
     /** @var int The index of the currently read stream */
-    private $streamIndex = 0;
+    private int $streamIndex = 0;
     /** @var int The current position inside the substreams */
-    private $position = 0;
+    private int $position = 0;
 
     /**
-     * @param IStream $streams The list of streams to add
+     * @param IStream[] $streams The list of streams to add
      */
     public function __construct(array $streams = [])
     {
@@ -275,11 +275,11 @@ class MultiStream implements IStream
                 }
 
                 return;
-            } else {
-                // Move this stream to the end
-                $stream->seek(0, SEEK_END);
-                $currPosition += $currStreamLength;
             }
+
+            // Move this stream to the end
+            $stream->seek(0, SEEK_END);
+            $currPosition += $currStreamLength;
         }
     }
 

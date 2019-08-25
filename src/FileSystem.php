@@ -1,16 +1,16 @@
 <?php
 
 /**
- * Opulence
+ * Aphiria
  *
- * @link      https://www.opulencephp.com
+ * @link      https://www.aphiria.com
  * @copyright Copyright (C) 2019 David Young
- * @license   https://github.com/opulencephp/Opulence/blob/master/LICENSE.md
+ * @license   https://github.com/aphiria/io/blob/master/LICENSE.md
  */
 
 declare(strict_types=1);
 
-namespace Opulence\IO;
+namespace Aphiria\IO;
 
 use DateTime;
 use FilesystemIterator;

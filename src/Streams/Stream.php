@@ -1,16 +1,16 @@
 <?php
 
 /**
- * Opulence
+ * Aphiria
  *
- * @link      https://www.opulencephp.com
+ * @link      https://www.aphiria.com
  * @copyright Copyright (C) 2019 David Young
- * @license   https://github.com/opulencephp/Opulence/blob/master/LICENSE.md
+ * @license   https://github.com/aphiria/io/blob/master/LICENSE.md
  */
 
 declare(strict_types=1);
 
-namespace Opulence\IO\Streams;
+namespace Aphiria\IO\Streams;
 
 use InvalidArgumentException;
 use RuntimeException;
@@ -18,10 +18,10 @@ use RuntimeException;
 /**
  * Defines a basic stream
  */
-class Stream implements IStream
+final class Stream implements IStream
 {
     /** @var array The list of readable stream modes */
-    private static $readStreamModes = [
+    private static array $readStreamModes = [
         'a+',
         'c+',
         'c+b',
@@ -40,7 +40,7 @@ class Stream implements IStream
         'x+t'
     ];
     /** @var array The list of writable stream modes */
-    private static $writeStreamModes = [
+    private static array $writeStreamModes = [
         'a',
         'a+',
         'c+',
@@ -62,13 +62,13 @@ class Stream implements IStream
     /** @var resource The underlying stream handle */
     private $handle;
     /** @var int|null The length of the stream, if known */
-    private $length;
+    private ?int $length;
     /** @var bool Whether or not the stream is readable */
-    private $isReadable;
+    private bool $isReadable;
     /** @var bool Whether or not the stream is seekable */
-    private $isSeekable;
+    private bool $isSeekable;
     /** @var bool Whether or not the stream is writable */
-    private $isWritable;
+    private bool $isWritable;
 
     /**
      * @param resource $handle The underlying stream handle
